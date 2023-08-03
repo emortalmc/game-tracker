@@ -82,6 +82,9 @@ func (a *app) writeStartMessage() {
 			PlayerIds:    []string{emortaldevId.String()},
 		},
 	}})
+	if err != nil {
+		panic(err)
+	}
 
 	message := &gametracker.GameStartMessage{
 		CommonData: &gametracker.CommonGameData{
