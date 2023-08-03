@@ -7,7 +7,7 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/segmentio/kafka-go v0.4.39
 	github.com/spf13/viper v1.16.0
-	go.mongodb.org/mongo-driver v1.12.0
+	go.mongodb.org/mongo-driver v1.12.1
 	go.uber.org/zap v1.24.0
 	google.golang.org/protobuf v1.30.0
 )
