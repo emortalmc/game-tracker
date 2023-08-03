@@ -1,0 +1,152 @@
+package repository
+
+import (
+	"context"
+	"fmt"
+	"game-tracker/internal/config"
+	"game-tracker/internal/repository/model"
+	"game-tracker/internal/repository/registrytypes"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/bsoncodec"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.uber.org/zap"
+	"sync"
+	"time"
+)
+
+const (
+	databaseName = "game-tracker"
+
+	liveGameCollectionName     = "game"
+	historicGameCollectionName = "historicGame"
+)
+
+type mongoRepository struct {
+	database *mongo.Database
+
+	liveGameCollection     *mongo.Collection
+	historicGameCollection *mongo.Collection
+}
+
+func NewMongoRepository(ctx context.Context, logger *zap.SugaredLogger, wg *sync.WaitGroup, cfg *config.MongoDBConfig) (Repository, error) {
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(cfg.URI).SetRegistry(createCodecRegistry()))
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect to mongo: %w", err)
+	}
+
+	database := client.Database(databaseName)
+	repo := &mongoRepository{
+		database:               database,
+		liveGameCollection:     database.Collection(liveGameCollectionName),
+		historicGameCollection: database.Collection(historicGameCollectionName),
+	}
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		<-ctx.Done()
+		if err := client.Disconnect(ctx); err != nil {
+			logger.Errorw("failed to disconnect from mongo", err)
+		}
+	}()
+
+	repo.createIndexes(ctx)
+	logger.Infow("created mongo indexes")
+
+	return repo, nil
+}
+
+var (
+	liveGameIndexes = []mongo.IndexModel{
+		{
+			Keys:    bson.D{{Key: "gameModeId", Value: 1}}, // todo this index might not be needed
+			Options: options.Index().SetName("gameModeId"),
+		},
+		// todo
+	}
+	historicGameIndexes = []mongo.IndexModel{
+		{
+			Keys:    bson.D{{Key: "gameModeId", Value: 1}}, // todo this index might not be needed
+			Options: options.Index().SetName("gameModeId"),
+		},
+	} // todo
+)
+
+func (m *mongoRepository) createIndexes(ctx context.Context) {
+	collIndexes := map[*mongo.Collection][]mongo.IndexModel{
+		m.liveGameCollection:     liveGameIndexes,
+		m.historicGameCollection: historicGameIndexes,
+	}
+
+	wg := sync.WaitGroup{}
+	wg.Add(len(collIndexes))
+
+	for coll, indexes := range collIndexes {
+		go func(coll *mongo.Collection, indexes []mongo.IndexModel) {
+			defer wg.Done()
+			_, err := m.createCollIndexes(ctx, coll, indexes)
+			if err != nil {
+				panic(fmt.Sprintf("failed to create indexes for collection %s: %s", coll.Name(), err))
+			}
+		}(coll, indexes)
+	}
+
+	wg.Wait()
+}
+
+func (m *mongoRepository) createCollIndexes(ctx context.Context, coll *mongo.Collection, indexes []mongo.IndexModel) (int, error) {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	result, err := coll.Indexes().CreateMany(ctx, indexes)
+	if err != nil {
+		return 0, err
+	}
+
+	return len(result), nil
+}
+
+func (m *mongoRepository) GetLiveGame(ctx context.Context, id primitive.ObjectID) (*model.LiveGame, error) {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	var game model.LiveGame
+	if err := m.liveGameCollection.FindOne(ctx, bson.M{"_id": id}).Decode(&game); err != nil {
+		return nil, err
+	}
+
+	if err := game.ParseGameData(); err != nil {
+		return nil, err
+	}
+
+	return &game, nil
+}
+
+var ErrIdNotSet = fmt.Errorf("id not set")
+
+func (m *mongoRepository) SaveLiveGame(ctx context.Context, game *model.LiveGame) error {
+	if game.Id.IsZero() {
+		return ErrIdNotSet
+	}
+
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	_, err := m.liveGameCollection.UpdateByID(ctx, game.Id, bson.M{"$set": game}, options.Update().SetUpsert(true))
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func createCodecRegistry() *bsoncodec.Registry {
+	r := bson.NewRegistry()
+
+	r.RegisterTypeEncoder(registrytypes.UUIDType, bsoncodec.ValueEncoderFunc(registrytypes.UuidEncodeValue))
+	r.RegisterTypeDecoder(registrytypes.UUIDType, bsoncodec.ValueDecoderFunc(registrytypes.UuidDecodeValue))
+
+	return r
+}
