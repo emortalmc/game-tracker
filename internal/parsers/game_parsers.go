@@ -1,4 +1,4 @@
-package kafka
+package parsers
 
 import (
 	"game-tracker/internal/repository/model"

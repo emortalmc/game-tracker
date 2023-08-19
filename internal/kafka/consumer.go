@@ -4,11 +4,11 @@ import (
 	"context"
 	"fmt"
 	"game-tracker/internal/config"
+	"game-tracker/internal/parsers"
 	"game-tracker/internal/repository"
 	"game-tracker/internal/repository/model"
 	"game-tracker/internal/utils"
 	"github.com/emortalmc/proto-specs/gen/go/message/gametracker"
-	pbmodel "github.com/emortalmc/proto-specs/gen/go/model/gametracker"
 	"github.com/emortalmc/proto-specs/gen/go/nongenerated/kafkautils"
 	"github.com/segmentio/kafka-go"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -21,25 +21,6 @@ import (
 )
 
 const gamesTopic = "games"
-
-var dualParsers = map[proto.Message]func(data proto.Message, g *model.Game) error{
-	// Common
-	&pbmodel.CommonGameTeamData{}: parseGameTeamData,
-}
-
-var liveParsers = map[proto.Message]func(data proto.Message, g *model.LiveGame) error{
-	// TowerDefence
-	&pbmodel.TowerDefenceStartData{}:  handleTowerDefenceStartData,
-	&pbmodel.TowerDefenceUpdateData{}: handleTowerDefenceUpdateData,
-}
-
-var historicParsers = map[proto.Message]func(data proto.Message, g *model.HistoricGame) error{
-	// Common
-	&pbmodel.CommonGameFinishWinnerData{}: parseGameFinishWinnerData,
-
-	// TowerDefence
-	&pbmodel.TowerDefenceFinishData{}: handleTowerDefenceFinishData,
-}
 
 type consumer struct {
 	logger *zap.SugaredLogger
@@ -69,8 +50,8 @@ func NewConsumer(ctx context.Context, wg *sync.WaitGroup, cfg *config.KafkaConfi
 
 		reader: reader,
 
-		liveHandler:     &parserHandler[model.LiveGame]{logger: logger, parsers: liveParsers},
-		historicHandler: &parserHandler[model.HistoricGame]{logger: logger, parsers: historicParsers},
+		liveHandler:     &parserHandler[model.LiveGame]{logger: logger, parsers: parsers.LiveParsers},
+		historicHandler: &parserHandler[model.HistoricGame]{logger: logger, parsers: parsers.HistoricParsers},
 	}
 
 	handler := kafkautils.NewConsumerHandler(logger, reader)
@@ -243,7 +224,7 @@ func (h *parserHandler[T]) handle(content []*anypb.Any, g *T) error {
 			}
 		}
 
-		for key, parser := range dualParsers {
+		for key, parser := range parsers.DualParsers {
 			if anyFullName == string(key.ProtoReflect().Descriptor().FullName()) {
 				unmarshaled := key
 				if err := anyPb.UnmarshalTo(unmarshaled); err != nil {
