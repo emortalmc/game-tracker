@@ -1,9 +1,9 @@
 module game-tracker
 
-go 1.20
+go 1.21
 
 require (
-	github.com/emortalmc/proto-specs/gen/go v0.0.0-20230725170338-f7c6ffb47b95
+	github.com/emortalmc/proto-specs/gen/go v0.0.0-20230819121158-4e98fac4b4f8
 	github.com/google/uuid v1.3.0
 	github.com/segmentio/kafka-go v0.4.42
 	github.com/spf13/viper v1.16.0
@@ -31,7 +31,6 @@ require (
 	github.com/xdg-go/scram v1.1.2 // indirect
 	github.com/xdg-go/stringprep v1.0.4 // indirect
 	github.com/youmark/pkcs8 v0.0.0-20181117223130-1be2e3e5546d // indirect
-	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.10.0 // indirect
 	golang.org/x/crypto v0.9.0 // indirect
 	golang.org/x/sync v0.1.0 // indirect

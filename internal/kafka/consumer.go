@@ -6,6 +6,7 @@ import (
 	"game-tracker/internal/config"
 	"game-tracker/internal/repository"
 	"game-tracker/internal/repository/model"
+	"game-tracker/internal/utils"
 	"github.com/emortalmc/proto-specs/gen/go/message/gametracker"
 	pbmodel "github.com/emortalmc/proto-specs/gen/go/model/gametracker"
 	"github.com/emortalmc/proto-specs/gen/go/nongenerated/kafkautils"
@@ -21,10 +22,23 @@ import (
 
 const gamesTopic = "games"
 
-var parsers = map[proto.Message]func(data proto.Message, g *model.LiveGame) error{
-	&pbmodel.TowerDefenceStartData{}:   handleTowerDefenceStartData,
-	&pbmodel.TowerDefenceUpdateData{}:  handleTowerDefenceUpdateData,
-	&pbmodel.CommonGameStartTeamData{}: parseGameStartTeamData,
+var dualParsers = map[proto.Message]func(data proto.Message, g *model.Game) error{
+	// Common
+	&pbmodel.CommonGameTeamData{}: parseGameTeamData,
+}
+
+var liveParsers = map[proto.Message]func(data proto.Message, g *model.LiveGame) error{
+	// TowerDefence
+	&pbmodel.TowerDefenceStartData{}:  handleTowerDefenceStartData,
+	&pbmodel.TowerDefenceUpdateData{}: handleTowerDefenceUpdateData,
+}
+
+var historicParsers = map[proto.Message]func(data proto.Message, g *model.HistoricGame) error{
+	// Common
+	&pbmodel.CommonGameFinishWinnerData{}: parseGameFinishWinnerData,
+
+	// TowerDefence
+	&pbmodel.TowerDefenceFinishData{}: handleTowerDefenceFinishData,
 }
 
 type consumer struct {
@@ -32,6 +46,9 @@ type consumer struct {
 	repo   repository.Repository
 
 	reader *kafka.Reader
+
+	liveHandler     *parserHandler[model.LiveGame]
+	historicHandler *parserHandler[model.HistoricGame]
 }
 
 func NewConsumer(ctx context.Context, wg *sync.WaitGroup, cfg *config.KafkaConfig, logger *zap.SugaredLogger,
@@ -42,12 +59,8 @@ func NewConsumer(ctx context.Context, wg *sync.WaitGroup, cfg *config.KafkaConfi
 		GroupID:     "game-tracker",
 		GroupTopics: []string{gamesTopic},
 
-		Logger: kafka.LoggerFunc(func(format string, args ...interface{}) {
-			logger.Infow(fmt.Sprintf(format, args...))
-		}),
-		ErrorLogger: kafka.LoggerFunc(func(format string, args ...interface{}) {
-			logger.Errorw(fmt.Sprintf(format, args...))
-		}),
+		Logger:      kafkautils.CreateLogger(logger),
+		ErrorLogger: kafkautils.CreateErrorLogger(logger),
 	})
 
 	c := &consumer{
@@ -55,11 +68,15 @@ func NewConsumer(ctx context.Context, wg *sync.WaitGroup, cfg *config.KafkaConfi
 		repo:   repo,
 
 		reader: reader,
+
+		liveHandler:     &parserHandler[model.LiveGame]{logger: logger, parsers: liveParsers},
+		historicHandler: &parserHandler[model.HistoricGame]{logger: logger, parsers: historicParsers},
 	}
 
 	handler := kafkautils.NewConsumerHandler(logger, reader)
 	handler.RegisterHandler(&gametracker.GameStartMessage{}, c.handleGameStartMessage)
 	handler.RegisterHandler(&gametracker.GameUpdateMessage{}, c.handleGameUpdateMessage)
+	handler.RegisterHandler(&gametracker.GameFinishMessage{}, c.handleGameFinishMessage)
 
 	logger.Infow("started listening for kafka messages", "topics", reader.Config().GroupTopics)
 
@@ -90,16 +107,17 @@ func (c *consumer) handleGameStartMessage(ctx context.Context, _ *kafka.Message,
 	}
 
 	liveGame := &model.LiveGame{
-		Id:          id,
-		GameModeId:  commonData.GameModeId,
-		Stage:       model.StageInProgress, // todo listen for matchmaker creating it
-		ServerId:    commonData.ServerId,
+		Game: &model.Game{
+			Id:         id,
+			GameModeId: commonData.GameModeId,
+			ServerId:   commonData.ServerId,
+			StartTime:  utils.Pointer(m.StartTime.AsTime()),
+			Players:    players,
+		},
 		LastUpdated: time.Now(),
-		Players:     players,
-		StartTime:   m.StartTime.AsTime(),
 	}
 
-	if err := c.handleParsers(m.Content, liveGame); err != nil {
+	if err := c.liveHandler.handle(m.Content, liveGame); err != nil {
 		c.logger.Errorw("failed to handle game content", "game", commonData.GameId, "content", m.Content)
 		return
 	}
@@ -139,7 +157,7 @@ func (c *consumer) handleGameUpdateMessage(ctx context.Context, _ *kafka.Message
 
 	// common data end
 
-	if err := c.handleParsers(m.Content, liveGame); err != nil {
+	if err := c.liveHandler.handle(m.Content, liveGame); err != nil {
 		c.logger.Errorw("failed to handle game content", "game", commonData.GameId, "content", m.Content)
 		return
 	}
@@ -149,13 +167,67 @@ func (c *consumer) handleGameUpdateMessage(ctx context.Context, _ *kafka.Message
 	}
 }
 
-func (c *consumer) handleParsers(content []*anypb.Any, g *model.LiveGame) error {
+func (c *consumer) handleGameFinishMessage(ctx context.Context, _ *kafka.Message, uncastMsg proto.Message) {
+	m := uncastMsg.(*gametracker.GameFinishMessage)
+	commonData := m.CommonData
+
+	id, err := primitive.ObjectIDFromHex(commonData.GameId)
+	if err != nil {
+		c.logger.Errorw("failed to parse game id", "gameId", commonData.GameId)
+		return
+	}
+
+	liveGame, err := c.repo.GetLiveGame(ctx, id)
+	if err != nil {
+		c.logger.Errorw("failed to get live game", "game", id, "error", err)
+		return
+	}
+
+	if err := c.repo.DeleteLiveGame(ctx, id); err != nil {
+		c.logger.Errorw("failed to delete live game", "game", id, "error", err)
+		return
+	}
+
+	players, err := model.BasicPlayersFromProto(commonData.Players)
+	if err != nil {
+		c.logger.Errorw("failed to parse players", "players", commonData.Players)
+		return
+	}
+
+	game := &model.HistoricGame{
+		Game: &model.Game{
+			Id:         id,
+			GameModeId: commonData.GameModeId,
+			ServerId:   commonData.ServerId,
+			StartTime:  liveGame.StartTime,
+			Players:    players,
+		},
+		EndTime: m.EndTime.AsTime(),
+	}
+
+	if err := c.historicHandler.handle(m.Content, game); err != nil {
+		c.logger.Errorw("failed to handle game content", "error", err, "game", commonData.GameId, "content", m.Content)
+		return
+	}
+
+	if err := c.repo.SaveHistoricGame(ctx, game); err != nil {
+		c.logger.Errorw("failed to save historic game", "game", game, "error", err)
+	}
+}
+
+type parserHandler[T model.IGame] struct {
+	logger *zap.SugaredLogger
+
+	parsers map[proto.Message]func(data proto.Message, game *T) error
+}
+
+func (h *parserHandler[T]) handle(content []*anypb.Any, g *T) error {
 	unhandledIndexes := make([]bool, len(content)) // every index is false by default
 
 	for i, anyPb := range content {
 		anyFullName := strings.SplitAfter(anyPb.TypeUrl, "type.googleapis.com/")[1]
 
-		for key, parser := range parsers {
+		for key, parser := range h.parsers {
 			if anyFullName == string(key.ProtoReflect().Descriptor().FullName()) {
 				unmarshaled := key
 				if err := anyPb.UnmarshalTo(unmarshaled); err != nil {
@@ -170,13 +242,28 @@ func (c *consumer) handleParsers(content []*anypb.Any, g *model.LiveGame) error 
 				break
 			}
 		}
+
+		for key, parser := range dualParsers {
+			if anyFullName == string(key.ProtoReflect().Descriptor().FullName()) {
+				unmarshaled := key
+				if err := anyPb.UnmarshalTo(unmarshaled); err != nil {
+					return fmt.Errorf("failed to unmarshal game content: %w", err)
+				}
+
+				if err := parser(unmarshaled, (*g).GetGame()); err != nil {
+					return fmt.Errorf("failed to parse game content: %w", err)
+				}
+
+				unhandledIndexes[i] = true
+				break
+			}
+		}
 	}
 
 	// check every index has been processed and warn if not
 	for i, b := range unhandledIndexes {
 		if !b {
-			c.logger.Warnw("unhandled game content index", "index", i, "game", g.Id, "gameMode", g.GameModeId,
-				"content", content)
+			h.logger.Warnw("unhandled game content index", "index", i, "game", g, "content", content)
 		}
 	}
 

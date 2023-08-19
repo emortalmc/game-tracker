@@ -13,9 +13,6 @@ import (
 type GameStage uint8
 
 const (
-	StagePreGame    GameStage = 0
-	StageInProgress GameStage = 1
-
 	LiveTowerDefenceDataId int32 = 1
 )
 
@@ -33,38 +30,38 @@ func getDataType(example interface{}) int32 {
 	return 0 // 0 is ignored by omitempty so it won't be put in the db
 }
 
-type LiveGame struct {
-	// GameData provided at game create (allocation messages)
+type IGame interface {
+	GetGame() *Game
+}
 
+type Game struct {
 	Id         primitive.ObjectID `bson:"_id"`
 	GameModeId string             `bson:"gameModeId"`
-	Stage      GameStage          `bson:"stage"`
 
-	LastUpdated time.Time      `bson:"lastUpdated"`
-	ServerId    string         `bson:"serverId"`
-	Players     []*BasicPlayer `bson:"players"`
-
-	// GameData provided at game start (message)
-
-	StartTime time.Time `bson:"startTime"`
+	ServerId  string         `bson:"serverId"`
+	StartTime *time.Time     `bson:"startTime,omitempty"`
+	Players   []*BasicPlayer `bson:"players"`
 
 	// The below data is all optional and varies by game mode
+
+	TeamData *[]*Team `bson:"teams,omitempty"`
 
 	// GameData is data specific to the game mode. It is only present if the game sends it
 	GameData     interface{} `bson:"gameData,omitempty"`
 	GameDataType int32       `bson:"gameDataType,omitempty"`
-
-	// TeamData only present if the game sends it
-	TeamData *[]*Team `bson:"teams,omitempty"`
 }
 
-func (g *LiveGame) SetGameData(data interface{}) {
+func (g *Game) GetGame() *Game {
+	return g
+}
+
+func (g *Game) SetGameData(data interface{}) {
 	g.GameData = data
 	g.GameDataType = getDataType(data)
 }
 
 // ParseGameData converts and replaces the game data from bson.D to the correct type
-func (g *LiveGame) ParseGameData() error {
+func (g *Game) ParseGameData() error {
 	if g.GameData == nil {
 		return nil
 	}
@@ -96,25 +93,75 @@ func (g *LiveGame) ParseGameData() error {
 	return nil
 }
 
-type HistoricGame[T interface{}] struct {
-	Id primitive.ObjectID `bson:"_id"`
+type LiveGame struct {
+	// Embed Game for common fields
+	*Game `bson:",inline"`
 
-	StartTime time.Time `bson:"startTime"`
-	EndTime   time.Time `bson:"endTime"`
+	// GameData provided at game create (allocation messages)
+	LastUpdated time.Time `bson:"lastUpdated"`
+}
+
+type HistoricGame struct {
+	// Embed Game for common fields
+	*Game `bson:",inline"`
+
+	EndTime time.Time `bson:"endTime"`
 
 	// The below data is all optional and varies by game mode
-	GameData   *T                  `bson:"gameData"`
-	WinnerData *HistoricWinnerData `bson:"winnerData"`
+	WinnerData *HistoricWinnerData `bson:"winnerData,omitempty"`
 }
 
 type HistoricWinnerData struct {
-	Winners []*BasicPlayer `bson:"winners"`
-	Losers  []*BasicPlayer `bson:"losers"`
+	WinnerIds []uuid.UUID `bson:"winnerIds"`
+	LoserIds  []uuid.UUID `bson:"loserIds"`
+}
+
+func HistoricWinnerDataFromProto(d *gametracker.CommonGameFinishWinnerData) (*HistoricWinnerData, error) {
+	winnerIds, err := ParseUuids(d.Winners)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse winners: %w", err)
+	}
+
+	loserIds, err := ParseUuids(d.Losers)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse losers: %w", err)
+	}
+
+	return &HistoricWinnerData{
+		WinnerIds: winnerIds,
+		LoserIds:  loserIds,
+	}, nil
 }
 
 type BasicPlayer struct {
 	Id       uuid.UUID `bson:"id"`
 	Username string    `bson:"username"`
+}
+
+func BasicPlayerFromProto(p *gametracker.BasicGamePlayer) (*BasicPlayer, error) {
+	id, err := uuid.Parse(p.Id)
+	if err != nil {
+		return nil, err
+	}
+
+	return &BasicPlayer{
+		Id:       id,
+		Username: p.Username,
+	}, nil
+}
+
+func BasicPlayersFromProto(players []*gametracker.BasicGamePlayer) ([]*BasicPlayer, error) {
+	basicPlayers := make([]*BasicPlayer, len(players))
+	for i, p := range players {
+		basicPlayer, err := BasicPlayerFromProto(p)
+		if err != nil {
+			return nil, err
+		}
+
+		basicPlayers[i] = basicPlayer
+	}
+
+	return basicPlayers, nil
 }
 
 type Team struct {
@@ -143,28 +190,16 @@ func TeamFromProto(t *gametracker.Team) (*Team, error) {
 	}, nil
 }
 
-func BasicPlayerFromProto(p *gametracker.BasicGamePlayer) (*BasicPlayer, error) {
-	id, err := uuid.Parse(p.Id)
-	if err != nil {
-		return nil, err
-	}
-
-	return &BasicPlayer{
-		Id:       id,
-		Username: p.Username,
-	}, nil
-}
-
-func BasicPlayersFromProto(players []*gametracker.BasicGamePlayer) ([]*BasicPlayer, error) {
-	basicPlayers := make([]*BasicPlayer, len(players))
-	for i, p := range players {
-		basicPlayer, err := BasicPlayerFromProto(p)
+func ParseUuids(uuidStrs []string) ([]uuid.UUID, error) {
+	ids := make([]uuid.UUID, len(uuidStrs))
+	for i, id := range uuidStrs {
+		parsed, err := uuid.Parse(id)
 		if err != nil {
 			return nil, err
 		}
 
-		basicPlayers[i] = basicPlayer
+		ids[i] = parsed
 	}
 
-	return basicPlayers, nil
+	return ids, nil
 }

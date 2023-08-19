@@ -13,15 +13,27 @@ import (
 	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"log"
+	"math/rand"
 	"time"
 )
 
 var (
-	serverId = "tower-defence-test-3wd6ws34-wc3463"
+	serverId = "tower-defence-test-" + uuid.New().String()[:6]
 	gameId   = primitive.NewObjectID()
 
 	expectationalId = uuid.MustParse("8d36737e-1c0a-4a71-87de-9906f577845e")
 	emortaldevId    = uuid.MustParse("7bd5b459-1e6b-4753-8274-1fbd2fe9a4d5")
+
+	defaultPlayers = []*pbmodel.BasicGamePlayer{
+		{
+			Id:       expectationalId.String(),
+			Username: "Expectational",
+		},
+		{
+			Id:       emortaldevId.String(),
+			Username: "emortaldev",
+		},
+	}
 )
 
 type app struct {
@@ -48,8 +60,13 @@ func main() {
 	a.writeStartMessage()
 	log.Printf("wrote start message, waiting 5 seconds before sending update")
 	time.Sleep(5 * time.Second)
+
 	a.writeUpdateMessage()
 	log.Printf("wrote update message, waiting 5 seconds before sending end")
+	time.Sleep(5 * time.Second)
+
+	a.writeFinishedMessage()
+	log.Printf("wrote finished message. All done :)")
 
 	if err != nil {
 		panic(err)
@@ -68,7 +85,7 @@ func (a *app) writeStartMessage() {
 		panic(err)
 	}
 
-	teamStartData, err := anypb.New(&pbmodel.CommonGameStartTeamData{Teams: []*pbmodel.Team{
+	teamStartData, err := anypb.New(&pbmodel.CommonGameTeamData{Teams: []*pbmodel.Team{
 		{
 			Id:           "blue",
 			FriendlyName: "Blue",
@@ -91,16 +108,7 @@ func (a *app) writeStartMessage() {
 			GameModeId: "tower-defence",
 			GameId:     gameId.Hex(),
 			ServerId:   serverId,
-			Players: []*pbmodel.BasicGamePlayer{
-				{
-					Id:       expectationalId.String(),
-					Username: "Expectational",
-				},
-				{
-					Id:       emortaldevId.String(),
-					Username: "emortaldev",
-				},
-			},
+			Players:    defaultPlayers,
 		},
 		StartTime: timestamppb.Now(),
 		MapId:     "test-map",
@@ -127,18 +135,43 @@ func (a *app) writeUpdateMessage() {
 			GameModeId: "tower-defence",
 			GameId:     gameId.Hex(),
 			ServerId:   serverId,
-			Players: []*pbmodel.BasicGamePlayer{
-				{
-					Id:       expectationalId.String(),
-					Username: "Expectational",
-				},
-				{
-					Id:       emortaldevId.String(),
-					Username: "emortaldev",
-				},
-			},
+			Players:    defaultPlayers,
 		},
 		Content: []*anypb.Any{tdUpdateData},
+	}
+
+	a.writeMessages(message)
+}
+
+func (a *app) writeFinishedMessage() {
+	tdFinishData, err := anypb.New(&pbmodel.TowerDefenceFinishData{
+		HealthData: &pbmodel.TowerDefenceHealthData{
+			MaxHealth:  rand.Int31n(1000),
+			BlueHealth: rand.Int31n(1000),
+			RedHealth:  rand.Int31n(1000),
+		},
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	winnerData, err := anypb.New(&pbmodel.CommonGameFinishWinnerData{
+		Winners: []string{defaultPlayers[0].GetId()},
+		Losers:  []string{defaultPlayers[1].GetId()},
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	message := &gametracker.GameFinishMessage{
+		CommonData: &gametracker.CommonGameData{
+			GameModeId: "tower-defence",
+			GameId:     gameId.Hex(),
+			ServerId:   serverId,
+			Players:    defaultPlayers,
+		},
+		EndTime: timestamppb.New(time.Now().Add(1 * time.Minute)),
+		Content: []*anypb.Any{tdFinishData, winnerData},
 	}
 
 	a.writeMessages(message)

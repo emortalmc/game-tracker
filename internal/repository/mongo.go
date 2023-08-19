@@ -19,7 +19,7 @@ import (
 const (
 	databaseName = "game-tracker"
 
-	liveGameCollectionName     = "game"
+	liveGameCollectionName     = "liveGame"
 	historicGameCollectionName = "historicGame"
 )
 
@@ -102,7 +102,7 @@ func (m *mongoRepository) createCollIndexes(ctx context.Context, coll *mongo.Col
 
 	result, err := coll.Indexes().CreateMany(ctx, indexes)
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("failed to create indexes: %w", err)
 	}
 
 	return len(result), nil
@@ -114,11 +114,11 @@ func (m *mongoRepository) GetLiveGame(ctx context.Context, id primitive.ObjectID
 
 	var game model.LiveGame
 	if err := m.liveGameCollection.FindOne(ctx, bson.M{"_id": id}).Decode(&game); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get live game: %w", err)
 	}
 
 	if err := game.ParseGameData(); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to parse game data: %w", err)
 	}
 
 	return &game, nil
@@ -136,10 +136,42 @@ func (m *mongoRepository) SaveLiveGame(ctx context.Context, game *model.LiveGame
 
 	_, err := m.liveGameCollection.UpdateByID(ctx, game.Id, bson.M{"$set": game}, options.Update().SetUpsert(true))
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to save live game: %w", err)
 	}
 
 	return nil
+}
+
+func (m *mongoRepository) DeleteLiveGame(ctx context.Context, id primitive.ObjectID) error {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	_, err := m.liveGameCollection.DeleteOne(ctx, bson.M{"_id": id})
+	return err
+}
+
+func (m *mongoRepository) SaveHistoricGame(ctx context.Context, game *model.HistoricGame) error {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	_, err := m.historicGameCollection.InsertOne(ctx, game)
+	return err
+}
+
+func (m *mongoRepository) GetHistoricGame(ctx context.Context, id primitive.ObjectID) (*model.HistoricGame, error) {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	var game model.HistoricGame
+	if err := m.historicGameCollection.FindOne(ctx, bson.M{"_id": id}).Decode(&game); err != nil {
+		return nil, fmt.Errorf("failed to get historic game: %w", err)
+	}
+
+	if err := game.ParseGameData(); err != nil {
+		return nil, fmt.Errorf("failed to parse game data: %w", err)
+	}
+
+	return &game, nil
 }
 
 func createCodecRegistry() *bsoncodec.Registry {

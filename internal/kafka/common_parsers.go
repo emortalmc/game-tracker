@@ -6,8 +6,8 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-func parseGameStartTeamData(m proto.Message, g *model.LiveGame) error {
-	cast := m.(*pbmodel.CommonGameStartTeamData)
+func parseGameTeamData(m proto.Message, g *model.Game) error {
+	cast := m.(*pbmodel.CommonGameTeamData)
 
 	teams := make([]*model.Team, len(cast.Teams))
 	for i, t := range cast.Teams {
@@ -20,6 +20,19 @@ func parseGameStartTeamData(m proto.Message, g *model.LiveGame) error {
 	}
 
 	g.TeamData = &teams
+
+	return nil
+}
+
+func parseGameFinishWinnerData(m proto.Message, g *model.HistoricGame) error {
+	cast := m.(*pbmodel.CommonGameFinishWinnerData)
+
+	d, err := model.HistoricWinnerDataFromProto(cast)
+	if err != nil {
+		return err
+	}
+
+	g.WinnerData = d
 
 	return nil
 }

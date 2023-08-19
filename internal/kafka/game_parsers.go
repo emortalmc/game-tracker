@@ -9,7 +9,7 @@ import (
 
 func handleTowerDefenceStartData(m proto.Message, g *model.LiveGame) error {
 	cast := m.(*pbmodel.TowerDefenceStartData)
-	g.SetGameData(model.LiveTowerDefenceDataFromStart(cast))
+	g.SetGameData(model.CreateLiveTowerDefenceDataFromStart(cast))
 
 	return nil
 }
@@ -20,6 +20,14 @@ func handleTowerDefenceUpdateData(m proto.Message, g *model.LiveGame) error {
 	(g.GameData).(*model.LiveTowerDefenceData).Update(cast)
 
 	log.Printf("Changed: %+v", g.GameData)
+
+	return nil
+}
+
+func handleTowerDefenceFinishData(m proto.Message, g *model.HistoricGame) error {
+	cast := m.(*pbmodel.TowerDefenceFinishData)
+
+	g.GameData = model.CreateHistoricTowerDefenceDataFromFinish(cast)
 
 	return nil
 }
