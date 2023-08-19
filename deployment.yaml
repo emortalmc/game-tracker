@@ -22,7 +22,7 @@ spec:
     spec:
       containers:
         - name: game-tracker
-          image: ghcr.io/emortalmc/game-tracker:5e55bb529555fe5ccc726a916bfb38475e65a829
+          image: ghcr.io/emortalmc/game-tracker:ddfbfada313a20352067e60b6563fc9f6e0845ce
           ports:
             - name: grpc
               containerPort: 9010
