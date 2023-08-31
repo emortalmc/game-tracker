@@ -20,7 +20,7 @@ import (
 	"time"
 )
 
-const gamesTopic = "games"
+const gamesTopic = "game-tracker"
 
 type consumer struct {
 	logger *zap.SugaredLogger
