@@ -5,11 +5,12 @@ go 1.21
 require (
 	github.com/emortalmc/proto-specs/gen/go v0.0.0-20230819121158-4e98fac4b4f8
 	github.com/google/uuid v1.5.0
-	github.com/segmentio/kafka-go v0.4.46
-	github.com/spf13/viper v1.18.1
-	go.mongodb.org/mongo-driver v1.12.1
+	github.com/segmentio/kafka-go v0.4.47
+	github.com/spf13/pflag v1.0.5
+	github.com/spf13/viper v1.18.2
+	go.mongodb.org/mongo-driver v1.13.1
 	go.uber.org/zap v1.26.0
-	google.golang.org/protobuf v1.31.0
+	google.golang.org/protobuf v1.32.0
 )
 
 require (
@@ -27,8 +28,6 @@ require (
 	github.com/sourcegraph/conc v0.3.0 // indirect
 	github.com/spf13/afero v1.11.0 // indirect
 	github.com/spf13/cast v1.6.0 // indirect
-	github.com/spf13/jwalterweatherman v1.1.0 // indirect
-	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
 	github.com/xdg-go/scram v1.1.2 // indirect

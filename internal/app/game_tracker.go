@@ -11,7 +11,7 @@ import (
 	"syscall"
 )
 
-func Run(cfg *config.Config, logger *zap.SugaredLogger) {
+func Run(cfg config.Config, logger *zap.SugaredLogger) {
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer cancel()
 	wg := &sync.WaitGroup{}

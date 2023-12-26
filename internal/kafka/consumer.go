@@ -32,7 +32,7 @@ type consumer struct {
 	historicHandler *parserHandler[model.HistoricGame]
 }
 
-func NewConsumer(ctx context.Context, wg *sync.WaitGroup, cfg *config.KafkaConfig, logger *zap.SugaredLogger,
+func NewConsumer(ctx context.Context, wg *sync.WaitGroup, cfg config.KafkaConfig, logger *zap.SugaredLogger,
 	repo repository.Repository) {
 
 	reader := kafka.NewReader(kafka.ReaderConfig{
