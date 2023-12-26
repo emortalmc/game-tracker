@@ -41,10 +41,7 @@ type app struct {
 }
 
 func main() {
-	cfg, err := config.LoadGlobalConfig()
-	if err != nil {
-		panic(err)
-	}
+	cfg := config.LoadGlobalConfig()
 
 	w := &kafka.Writer{
 		Addr:     kafka.TCP(fmt.Sprintf("%s:%d", cfg.Kafka.Host, cfg.Kafka.Port)),
@@ -67,10 +64,6 @@ func main() {
 
 	a.writeFinishedMessage()
 	log.Printf("wrote finished message. All done :)")
-
-	if err != nil {
-		panic(err)
-	}
 }
 
 func (a *app) writeStartMessage() {
