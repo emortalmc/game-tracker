@@ -37,44 +37,36 @@ func (d *LiveBlockSumoData) Update(data *gametracker.BlockSumoUpdateData) error 
 }
 
 func CreateBlockSumoScoreboard(data *gametracker.BlockSumoScoreboard) (*BlockSumoScoreboard, error) {
-	entries := make([]*BlockSumoScoreboardEntry, len(data.Entries))
+	entries := make(map[uuid.UUID]*BlockSumoScoreboardEntry)
 
-	for i, e := range data.Entries {
-		entry, err := CreateBlockSumoScoreboardEntry(e)
+	for id, e := range data.Entries {
+		parsedId, err := uuid.Parse(id)
 		if err != nil {
-			return nil, fmt.Errorf("failed to parse scoreboard entry: %w", err)
+			return nil, fmt.Errorf("failed to parse player id: %w", err)
 		}
 
-		entries[i] = entry
+		entries[parsedId] = CreateBlockSumoScoreboardEntry(e)
 	}
 
 	return &BlockSumoScoreboard{Entries: entries}, nil
 }
 
 type BlockSumoScoreboard struct {
-	Entries []*BlockSumoScoreboardEntry `bson:"entries"`
+	Entries map[uuid.UUID]*BlockSumoScoreboardEntry `bson:"entries"`
 }
 
 type BlockSumoScoreboardEntry struct {
-	PlayerID uuid.UUID `bson:"playerId"`
-
 	RemainingLives int32 `bson:"remainingLives"`
 	Kills          int32 `bson:"kills"`
 	FinalKills     int32 `bson:"finalKills"`
 }
 
-func CreateBlockSumoScoreboardEntry(e *gametracker.BlockSumoScoreboard_Entry) (*BlockSumoScoreboardEntry, error) {
-	id, err := uuid.Parse(e.Player.Id)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse player id: %w", err)
-	}
-
+func CreateBlockSumoScoreboardEntry(e *gametracker.BlockSumoScoreboard_Entry) *BlockSumoScoreboardEntry {
 	return &BlockSumoScoreboardEntry{
-		PlayerID:       id,
 		RemainingLives: e.RemainingLives,
 		Kills:          e.Kills,
 		FinalKills:     e.FinalKills,
-	}, nil
+	}
 }
 
 func CreateHistoricBlockSumoDataFromFinish(data *gametracker.BlockSumoFinishData) (*HistoricBlockSumoData, error) {
