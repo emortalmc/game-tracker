@@ -2,10 +2,12 @@ package model
 
 import (
 	"fmt"
+	"game-tracker/internal/repository/registrytypes"
 	"game-tracker/internal/utils"
 	"github.com/emortalmc/proto-specs/gen/go/model/gametracker"
 	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/bsonrw"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"time"
 )
@@ -14,10 +16,12 @@ type GameStage uint8
 
 const (
 	LiveTowerDefenceDataId int32 = 1
+	LiveBlockSumoDataId    int32 = 2
 )
 
 var dataType = map[int32]interface{}{
 	LiveTowerDefenceDataId: &LiveTowerDefenceData{},
+	LiveBlockSumoDataId:    &LiveBlockSumoData{},
 }
 
 func getDataType(example interface{}) int32 {
@@ -79,13 +83,24 @@ func (g *Game) ParseGameData() error {
 		return fmt.Errorf("unknown game data type: %d", g.GameDataType)
 	}
 
+	// Convert the interface{} to bytes
 	bytes, err := bson.Marshal(g.GameData)
 	if err != nil {
 		return fmt.Errorf("failed to marshal game data: %w", err)
 	}
 
-	if err := bson.Unmarshal(bytes, example); err != nil {
-		return fmt.Errorf("failed to unmarshal game data: %w", err)
+	// Parse the bytes from the interface{} into the correct type
+	dec, err := bson.NewDecoder(bsonrw.NewBSONDocumentReader(bytes))
+	if err != nil {
+		return fmt.Errorf("failed to create decoder: %w", err)
+	}
+
+	if err := dec.SetRegistry(registrytypes.CodecRegistry); err != nil {
+		return fmt.Errorf("failed to set registry: %w", err)
+	}
+
+	if err := dec.Decode(example); err != nil {
+		return fmt.Errorf("failed to decode: %w", err)
 	}
 
 	g.GameData = example

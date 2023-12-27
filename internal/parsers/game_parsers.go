@@ -1,10 +1,10 @@
 package parsers
 
 import (
+	"fmt"
 	"game-tracker/internal/repository/model"
 	pbmodel "github.com/emortalmc/proto-specs/gen/go/model/gametracker"
 	"google.golang.org/protobuf/proto"
-	"log"
 )
 
 func handleTowerDefenceStartData(m proto.Message, g *model.LiveGame) error {
@@ -19,8 +19,6 @@ func handleTowerDefenceUpdateData(m proto.Message, g *model.LiveGame) error {
 
 	(g.GameData).(*model.LiveTowerDefenceData).Update(cast)
 
-	log.Printf("Changed: %+v", g.GameData)
-
 	return nil
 }
 
@@ -28,6 +26,29 @@ func handleTowerDefenceFinishData(m proto.Message, g *model.HistoricGame) error 
 	cast := m.(*pbmodel.TowerDefenceFinishData)
 
 	g.GameData = model.CreateHistoricTowerDefenceDataFromFinish(cast)
+
+	return nil
+}
+
+// Block Sumo
+
+func handleBlockSumoUpdateData(m proto.Message, g *model.LiveGame) error {
+	cast := m.(*pbmodel.BlockSumoUpdateData)
+
+	if g.GameData == nil {
+		newData, err := model.CreateLiveBlockSumoDataFromUpdate(cast)
+
+		if err != nil {
+			return fmt.Errorf("failed to create new live block sumo data: %w", err)
+		}
+
+		g.SetGameData(newData)
+		return nil
+	}
+
+	if err := g.GameData.(*model.LiveBlockSumoData).Update(cast); err != nil {
+		return err
+	}
 
 	return nil
 }

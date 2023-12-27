@@ -15,6 +15,7 @@ var LiveParsers = map[proto.Message]func(data proto.Message, g *model.LiveGame) 
 	// TowerDefence
 	&pbmodel.TowerDefenceStartData{}:  handleTowerDefenceStartData,
 	&pbmodel.TowerDefenceUpdateData{}: handleTowerDefenceUpdateData,
+	&pbmodel.BlockSumoUpdateData{}:    handleBlockSumoUpdateData,
 }
 
 var HistoricParsers = map[proto.Message]func(data proto.Message, g *model.HistoricGame) error{

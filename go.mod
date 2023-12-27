@@ -3,7 +3,7 @@ module game-tracker
 go 1.21
 
 require (
-	github.com/emortalmc/proto-specs/gen/go v0.0.0-20230819121158-4e98fac4b4f8
+	github.com/emortalmc/proto-specs/gen/go v0.0.0-20231226231626-91d6f2e7c424
 	github.com/google/uuid v1.5.0
 	github.com/segmentio/kafka-go v0.4.47
 	github.com/spf13/pflag v1.0.5

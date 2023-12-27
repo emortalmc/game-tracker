@@ -121,7 +121,7 @@ func (c *consumer) handleGameUpdateMessage(ctx context.Context, _ *kafka.Message
 
 	liveGame, err := c.repo.GetLiveGame(ctx, id)
 	if err != nil {
-		c.logger.Errorw("failed to get live game", "game", id, "error", err)
+		c.logger.Errorw("failed to get live game", "gameId", id.Hex(), err)
 		return
 	}
 

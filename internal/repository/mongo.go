@@ -7,7 +7,6 @@ import (
 	"game-tracker/internal/repository/model"
 	"game-tracker/internal/repository/registrytypes"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/bsoncodec"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -31,7 +30,7 @@ type mongoRepository struct {
 }
 
 func NewMongoRepository(ctx context.Context, logger *zap.SugaredLogger, wg *sync.WaitGroup, cfg config.MongoDBConfig) (Repository, error) {
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(cfg.URI).SetRegistry(createCodecRegistry()))
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(cfg.URI).SetRegistry(registrytypes.CodecRegistry))
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to mongo: %w", err)
 	}
@@ -172,13 +171,4 @@ func (m *mongoRepository) GetHistoricGame(ctx context.Context, id primitive.Obje
 	}
 
 	return &game, nil
-}
-
-func createCodecRegistry() *bsoncodec.Registry {
-	r := bson.NewRegistry()
-
-	r.RegisterTypeEncoder(registrytypes.UUIDType, bsoncodec.ValueEncoderFunc(registrytypes.UuidEncodeValue))
-	r.RegisterTypeDecoder(registrytypes.UUIDType, bsoncodec.ValueDecoderFunc(registrytypes.UuidDecodeValue))
-
-	return r
 }
