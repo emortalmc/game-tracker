@@ -52,3 +52,16 @@ func handleBlockSumoUpdateData(m proto.Message, g *model.LiveGame) error {
 
 	return nil
 }
+
+func handleBlockSumoFinishData(m proto.Message, g *model.HistoricGame) error {
+	cast := m.(*pbmodel.BlockSumoFinishData)
+
+	data, err := model.CreateHistoricBlockSumoDataFromFinish(cast)
+	if err != nil {
+		return fmt.Errorf("failed to create historic block sumo data: %w", err)
+	}
+
+	g.GameData = data
+
+	return nil
+}

@@ -24,4 +24,5 @@ var HistoricParsers = map[proto.Message]func(data proto.Message, g *model.Histor
 
 	// TowerDefence
 	&pbmodel.TowerDefenceFinishData{}: handleTowerDefenceFinishData,
+	&pbmodel.BlockSumoFinishData{}:    handleBlockSumoFinishData,
 }

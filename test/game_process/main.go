@@ -149,8 +149,8 @@ func (a *app) writeFinishedMessage() {
 	}
 
 	winnerData, err := anypb.New(&pbmodel.CommonGameFinishWinnerData{
-		Winners: []string{defaultPlayers[0].GetId()},
-		Losers:  []string{defaultPlayers[1].GetId()},
+		WinnerIds: []string{defaultPlayers[0].GetId()},
+		LoserIds:  []string{defaultPlayers[1].GetId()},
 	})
 	if err != nil {
 		panic(err)

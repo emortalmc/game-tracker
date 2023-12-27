@@ -132,12 +132,12 @@ type HistoricWinnerData struct {
 }
 
 func HistoricWinnerDataFromProto(d *gametracker.CommonGameFinishWinnerData) (*HistoricWinnerData, error) {
-	winnerIds, err := ParseUuids(d.Winners)
+	winnerIds, err := ParseUuids(d.WinnerIds)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse winners: %w", err)
 	}
 
-	loserIds, err := ParseUuids(d.Losers)
+	loserIds, err := ParseUuids(d.LoserIds)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse losers: %w", err)
 	}
