@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-var (
+const (
 	kafkaHostFlag   = "kafka-host"
 	kafkaPortFlag   = "kafka-port"
 	mongoDBURIFlag  = "mongodb-uri"
