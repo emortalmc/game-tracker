@@ -2,16 +2,6 @@ github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSs
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc h1:U9qPSI2PIWSS1VwoXQT9A3Wy9MM3WgvqSxFWenqJduM=
 github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
-github.com/emortalmc/proto-specs/gen/go v0.0.0-20230819121158-4e98fac4b4f8 h1:hdxyq6f3ERgVHXoV7tJA8GcD/u0mgfjS1rA7LInzkkI=
-github.com/emortalmc/proto-specs/gen/go v0.0.0-20230819121158-4e98fac4b4f8/go.mod h1:se+tHcK9FWxeadkxLF5uj+SPauEye0X+Iq6cGczXGJY=
-github.com/emortalmc/proto-specs/gen/go v0.0.0-20231226231626-91d6f2e7c424 h1:hGAAoMUg1ecHgwnSEVYDPW/xHGkKPQWz+mBGnbUd/kM=
-github.com/emortalmc/proto-specs/gen/go v0.0.0-20231226231626-91d6f2e7c424/go.mod h1:se+tHcK9FWxeadkxLF5uj+SPauEye0X+Iq6cGczXGJY=
-github.com/emortalmc/proto-specs/gen/go v0.0.0-20231227013329-69ee51bd56da h1:ZG3YEDPdIppyNB2MX44KXyI0+bJooy7YRO3ANDo/nig=
-github.com/emortalmc/proto-specs/gen/go v0.0.0-20231227013329-69ee51bd56da/go.mod h1:se+tHcK9FWxeadkxLF5uj+SPauEye0X+Iq6cGczXGJY=
-github.com/emortalmc/proto-specs/gen/go v0.0.0-20231227013837-519634c84bf7 h1:Ytvs8vkLav7ojwBWifsqQcO+QQioqH18SuWUADbgQMc=
-github.com/emortalmc/proto-specs/gen/go v0.0.0-20231227013837-519634c84bf7/go.mod h1:se+tHcK9FWxeadkxLF5uj+SPauEye0X+Iq6cGczXGJY=
-github.com/emortalmc/proto-specs/gen/go v0.0.0-20231227141320-7e28392252de h1:MWGvHmOMHw44xhxRBFPrAH+n0hhwFHz9VXEqNctdbDE=
-github.com/emortalmc/proto-specs/gen/go v0.0.0-20231227141320-7e28392252de/go.mod h1:se+tHcK9FWxeadkxLF5uj+SPauEye0X+Iq6cGczXGJY=
 github.com/emortalmc/proto-specs/gen/go v0.0.0-20231227141427-aee00da1d2f6 h1:qZUxUa8HE7B5oLED05sBQLnmw4ySk3vgksfvNGdTfSM=
 github.com/emortalmc/proto-specs/gen/go v0.0.0-20231227141427-aee00da1d2f6/go.mod h1:se+tHcK9FWxeadkxLF5uj+SPauEye0X+Iq6cGczXGJY=
 github.com/frankban/quicktest v1.14.6 h1:7Xjx+VpznH+oBnejlPUj8oUpdxnVs4f8XU8WnHkI4W8=
@@ -148,8 +138,8 @@ golang.org/x/tools v0.1.12/go.mod h1:hNGJHUnrk76NpqgfD5Aqm5Crs+Hm0VOH/i9J2+nxYbc
 golang.org/x/tools v0.6.0/go.mod h1:Xwgl3UAJ/d3gWutnCtw505GrjyAbvKui8lOU390QaIU=
 golang.org/x/xerrors v0.0.0-20190717185122-a985d3407aa7/go.mod h1:I/5z698sn9Ka8TeJc9MKroUUfqBBauWjQqLJ2OPfmY0=
 golang.org/x/xerrors v0.0.0-20191204190536-9bdfabe68543/go.mod h1:I/5z698sn9Ka8TeJc9MKroUUfqBBauWjQqLJ2OPfmY0=
-google.golang.org/protobuf v1.32.0 h1:pPC6BG5ex8PDFnkbrGU3EixyhKcQ2aDuBS36lqK/C7I=
-google.golang.org/protobuf v1.32.0/go.mod h1:c6P6GXX6sHbq/GpV6MGZEdwhWPcYBgnhAHhKbcUYpos=
+google.golang.org/protobuf v1.33.0 h1:uNO2rsAINq/JlFpSdYEKIZ0uKD/R9cpdv0T+yoGwGmI=
+google.golang.org/protobuf v1.33.0/go.mod h1:c6P6GXX6sHbq/GpV6MGZEdwhWPcYBgnhAHhKbcUYpos=
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
 gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 h1:YR8cESwS4TdDjEe65xsg0ogRM/Nc3DYOhEAlW+xobZo=
 gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
