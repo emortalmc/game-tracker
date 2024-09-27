@@ -14,6 +14,8 @@ github.com/emortalmc/proto-specs/gen/go v0.0.0-20231227141320-7e28392252de h1:MW
 github.com/emortalmc/proto-specs/gen/go v0.0.0-20231227141320-7e28392252de/go.mod h1:se+tHcK9FWxeadkxLF5uj+SPauEye0X+Iq6cGczXGJY=
 github.com/emortalmc/proto-specs/gen/go v0.0.0-20231227141427-aee00da1d2f6 h1:qZUxUa8HE7B5oLED05sBQLnmw4ySk3vgksfvNGdTfSM=
 github.com/emortalmc/proto-specs/gen/go v0.0.0-20231227141427-aee00da1d2f6/go.mod h1:se+tHcK9FWxeadkxLF5uj+SPauEye0X+Iq6cGczXGJY=
+github.com/emortalmc/proto-specs/gen/go v0.0.0-20240927103241-2584fd28e0f9 h1:6xOnWrTvG2oJR1J6+B+tdZV5GdlbIgdQixdCCyfj4nA=
+github.com/emortalmc/proto-specs/gen/go v0.0.0-20240927103241-2584fd28e0f9/go.mod h1:se+tHcK9FWxeadkxLF5uj+SPauEye0X+Iq6cGczXGJY=
 github.com/frankban/quicktest v1.14.6 h1:7Xjx+VpznH+oBnejlPUj8oUpdxnVs4f8XU8WnHkI4W8=
 github.com/frankban/quicktest v1.14.6/go.mod h1:4ptaffx2x8+WTWXmUCuVU6aPUX1/Mz7zb5vbUoiM6w0=
 github.com/fsnotify/fsnotify v1.7.0 h1:8JEhPFa5W2WU7YfeZzPNqzMP6Lwt7L2715Ggo0nosvA=
